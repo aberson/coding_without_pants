@@ -537,7 +537,7 @@ session).
   Also confirm the `claude -p` context story (does it load cwd CLAUDE.md? pick neutral-cwd or a
   verified suppression flag per §3.2) and record the answer in this plan.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #2
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `pyproject.toml`, `src/cwp/{__init__,__main__,cli,config,templates}.py`, `.gitignore`, ruff/mypy config, `voice.md`, `build-contract.md`, `pantsless-test.md`
 - **Done when:** `uv run cwp --help` lists all sub-commands fast (no heavy imports at module top); `uv run cwp version` prints a version; the three root SoT files exist with the appendix content; a test asserts `.gitignore` contains the §4.3 privacy patterns; a test prints a non-ASCII title under captured output without raising; `ruff check .` and `mypy src` clean.
@@ -548,7 +548,7 @@ session).
   folder-scan-derived index) + the per-episode file templates, wired to `cwp new`, `cwp idea`
   (fast capture), `cwp list`, `cwp show`.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #3
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/episodes.py`, template content, `tests/test_episodes.py`
 - **Done when:** `cwp new "Test"` creates `001-test/` with all files + valid `meta.toml`; `cwp idea "x"` adds a minimal idea episode; `cwp list`/`cwp show 001` work; unit tests cover id/slug/collision/scan; an integration test drives `new → list` through the CLI.
@@ -557,7 +557,7 @@ session).
 ### Step 3: Lifecycle (status + next)
 - **Problem:** `lifecycle.py` (§5.3 permissive state machine, append-only history + UTC timestamps, `on-hold`/`cut`, warn-on-unusual-jump, `next` priority), wired to `cwp status`/`cwp next`.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #4
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/lifecycle.py`, `tests/test_lifecycle.py`
 - **Done when:** `cwp status 001 built` records the transition; a backward transition warns but succeeds; `cwp status 001 cut` hides it from default `cwp list`; `cwp next` returns the right episode + action; tests cover forward/backward/terminal + `next` tie-breaking.
@@ -572,7 +572,7 @@ session).
   wired to `cwp draft <id> <outline|script|title|description>`. Exports the claude-call seam that
   `brief.py`/`build.py` import (one subprocess wrapper, three callers).
 - **Type:** code
-- **Issue:** #
+- **Issue:** #5
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/drafting.py`, `tests/test_drafting.py`
 - **Done when:** `cwp draft 001 title --dry-run` prints the assembled prompt without calling `claude`; with a fake `claude` shim on PATH, `cwp draft 001 script` writes marked content; all four variants (`outline|script|title|description`) run through the one shared code path with a test each; a missing/unauthed `claude` prints fix-it text and exits 2; tests **mock the `claude` boundary** (no real API in CI) and cover the auth-fail path.
@@ -581,7 +581,7 @@ session).
 ### Step 5: Publish-prep (Channel Loop)
 - **Problem:** `publishing.py` — assemble `publish.md` into one Studio-ordered paste block, validate required fields, warn on remaining `<!-- AI DRAFT -->` markers, print the unconditional "Before you publish" checklist (real-name scan + Made-for-Kids audience setting) beside the paste block, record `youtube_url` + set `published` via `--url` — wired to `cwp publish`.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #6
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/publishing.py`, `tests/test_publishing.py`
 - **Done when:** `cwp publish 001` writes an ordered Title/Description/Tags/Thumbnail-text block + warns on missing fields/markers + prints the "Before you publish" checklist; `cwp publish 001 --url <u>` records the URL, sets `published_at`, transitions to `published`; tests cover ordering/validation/record/checklist.
@@ -599,7 +599,7 @@ session).
   update plan.md/CLAUDE.md accordingly; if it IS needed, preflight `shutil.which("ffmpeg")` with
   fix-it text.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #7
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/capture.py`, `tests/test_capture.py`
 - **Done when:** `cwp capture 005 --audio tests/fixtures/hello.wav` writes a redaction-scanned transcript; the whisper call is behind a seam so tests **mock the transcription boundary** (a canned transcript); one real-model test is opt-in via `CWP_RUN_REAL_WHISPER=1` (deselected by default — faster-whisper is a required dep, so `importorskip` would never skip); the low-confidence heuristic prints the re-record hint in a test; a name in the redact list never appears in the written transcript.
@@ -615,7 +615,7 @@ session).
   parse/write pair (and the vocabulary constant) that `build.py`/`verify.py` import. `kid_quote`
   passes the redact-names scan before write — wired to `cwp brief`.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #8
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `src/cwp/brief.py`, `tests/test_brief.py`
 - **Done when:** with a fake `claude` shim, `cwp brief 005` reads the transcript and writes a `brief.md` whose frontmatter parses round-trip via brief.py's own loader, with non-empty vocabulary-form `must_haves[]` and `kid_quote`; a must_have outside the vocabulary triggers one re-ask, then exit 2; missing transcript → user error (exit 1); tests mock the `claude` boundary and assert the schema + redaction.
@@ -637,7 +637,7 @@ session).
   `garbage_audio.html` (top-level AudioContext ONLY — proves the shim catches what console errors
   cannot), `garbage_dialog.html` (an `alert(` call).
 - **Type:** code
-- **Issue:** #
+- **Issue:** #9
 - **Flags:** --reviewers deep --isolation worktree
 - **Produces:** `src/cwp/verify.py`, `tests/fixtures/{golden,garbage_button,garbage_audio,garbage_dialog}.html`, `tests/test_verify.py`
 - **Done when:** `verify(golden.html)` passes; each single-defect garbage fixture fails FOR ITS OWN defect (asserted on the structured evidence, not just pass/fail); the must_haves compiler correctly maps ≥3 vocabulary predicates **not present in any fixture** to assertions; the verifier returns structured evidence (which check failed, with the offending line/selector/console error); requires `playwright install chromium`.
@@ -654,7 +654,7 @@ session).
   `.repair/attempt-N.png` + `log.jsonl` (minimal schema: attempt, timestamp, check, pass,
   duration_ms, evidence) — wired to `cwp build`.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #10
 - **Flags:** --reviewers deep --isolation worktree
 - **Produces:** `src/cwp/build.py`, `tests/test_build.py`
 - **Done when:** with a fake `claude` shim returning (a) a golden toy → `cwp build 005` commits `project/index.html` and logs a pass; (b) a broken toy twice then a good one → repair succeeds on the evidence; (c) broken every time → `needs_human=true`, exit 2, existing toy untouched; (d) the same broken toy twice in a row → near-identical abort before the last slot is spent; (e) a timeout → one same-slot retry then a timeout-specific `needs_human` message; missing brief exits 1; tests mock the `claude` boundary and exercise all paths.
@@ -666,7 +666,7 @@ session).
   `build-contract.md`, `pantsless-test.md` — were authored in Step 1; this step only verifies they
   still match the appendices.)
 - **Type:** code
-- **Issue:** #
+- **Issue:** #11
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `docs/production-notes.md`, 12 seeded `episodes/*/`, `README.md`, updated `CLAUDE.md`
 - **Done when:** `cwp list` shows all 12 seeds with correct ingredient/effort, under captured UTF-8 output (the seed hooks contain non-ASCII); `README.md` quickstart matches the actual CLI; a test asserts the 12 seeds load + validate.
@@ -679,7 +679,7 @@ session).
   asserting the derived index, the ordered publish block, and a committed verified toy — no
   exceptions, no folder/index drift.
 - **Type:** code
-- **Issue:** #
+- **Issue:** #12
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `tests/test_smoke_e2e.py`
 - **Done when:** the round-trip is green for both loops with mocked external boundaries.
@@ -690,7 +690,7 @@ session).
 
 ### Step M1: Dogfood the Channel Loop
 - **Source step:** v1 acceptance bar (§1.1)
-- **Issue:** #
+- **Issue:** #13
 - **Commands:**
   ```powershell
   cd c:\Users\abero\dev\coding_without_pants
@@ -710,7 +710,7 @@ session).
 
 ### Step M1.5: Solo Pantsless dry-run (real toolchain — no kid yet)
 - **Source step:** de-risk gate before M2 — the first LIVE claude + whisper + Playwright interaction (every automated step mocks the claude boundary)
-- **Issue:** #
+- **Issue:** #14
 - **Commands:**
   ```powershell
   cd c:\Users\abero\dev\coding_without_pants
@@ -731,7 +731,7 @@ session).
 
 ### Step M2: Dogfood the Pantsless Build — with your son (the heart of the channel)
 - **Source step:** v1 acceptance bar (§1.2)
-- **Issue:** #
+- **Issue:** #15
 - **Commands:**
   ```powershell
   cd c:\Users\abero\dev\coding_without_pants
