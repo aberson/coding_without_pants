@@ -28,11 +28,8 @@ ALL_COMMANDS = [
 ]
 
 # One valid invocation per stub subcommand (must reach the handler, not an argparse error).
+# new/idea/list/show became real handlers in Step 2 — covered by tests/test_episodes.py.
 STUB_ARGV: dict[str, list[str]] = {
-    "new": ["new", "A Test Title"],
-    "idea": ["idea", "button that burps the alphabet"],
-    "list": ["list"],
-    "show": ["show", "001"],
     "status": ["status", "001", "built"],
     "next": ["next"],
     "draft": ["draft", "001", "script"],

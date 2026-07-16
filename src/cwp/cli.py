@@ -10,11 +10,14 @@ and the Channel Loop commands stay fast (tests/test_cli.py enforces this).
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__
+from cwp import __version__, episodes
+from cwp.config import RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
@@ -24,10 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "new": 2,
-    "idea": 2,
-    "list": 2,
-    "show": 2,
     "status": 3,
     "next": 3,
     "draft": 4,
@@ -81,6 +80,78 @@ def _make_stub(command: str, step: int) -> Handler:
     return handler
 
 
+def _display_path(path: Path) -> str:
+    """Path relative to cwd when possible (readable), absolute otherwise."""
+    try:
+        return os.path.relpath(path)
+    except ValueError:  # e.g. a different drive on Windows
+        return str(path)
+
+
+def _episode_command(command: str, fn: Callable[[argparse.Namespace, Path], int]) -> Handler:
+    """Wrap an episode handler: resolve ``episodes/`` from cwd + map domain errors.
+
+    Exit-code contract (module docstring): no repo root → 2 (environment);
+    any :class:`episodes.EpisodeError` (bad title/id, missing episode) → 1 (user).
+    """
+
+    def handler(args: argparse.Namespace) -> int:
+        try:
+            episodes_dir = get_paths().episodes_dir
+        except RepoRootNotFoundError as exc:
+            print(f"cwp {command}: {exc}", file=sys.stderr)
+            return EXIT_ENV_ERROR
+        try:
+            return fn(args, episodes_dir)
+        except episodes.EpisodeError as exc:
+            print(f"cwp {command}: {exc}", file=sys.stderr)
+            return EXIT_USER_ERROR
+
+    return handler
+
+
+def _report_created(command: str, created: episodes.CreatedEpisode, label: str) -> int:
+    for warning in created.warnings:
+        print(f"cwp {command}: warning: {warning}", file=sys.stderr)
+    print(f"{label} {created.episode.id} at {_display_path(created.directory)}")
+    return EXIT_OK
+
+
+def _cmd_new(args: argparse.Namespace, episodes_dir: Path) -> int:
+    created = episodes.create_episode(
+        episodes_dir,
+        args.title,
+        ingredient=args.ingredient,
+        effort=args.effort,
+        hook=args.hook,
+        teaches=args.teaches,
+        tags=episodes.parse_tags(args.tags),
+    )
+    return _report_created("new", created, "created")
+
+
+def _cmd_idea(args: argparse.Namespace, episodes_dir: Path) -> int:
+    created = episodes.create_episode(episodes_dir, args.thought)
+    return _report_created("idea", created, "captured idea")
+
+
+def _cmd_list(_args: argparse.Namespace, episodes_dir: Path) -> int:
+    result = episodes.scan_episodes(episodes_dir)
+    for warning in result.warnings:
+        print(f"cwp list: warning: {warning}", file=sys.stderr)
+    if not result.episodes:
+        print('no episodes yet — try: cwp new "<title>"')
+        return EXIT_OK
+    print(episodes.format_table(result.episodes))
+    return EXIT_OK
+
+
+def _cmd_show(args: argparse.Namespace, episodes_dir: Path) -> int:
+    _directory, episode = episodes.load_episode(episodes_dir, args.id)
+    print(episodes.format_detail(episode))
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = _Parser(
         prog="cwp",
@@ -92,6 +163,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("new", help="create an episode folder from a title (idea status)")
     p.add_argument("title", help="episode title")
+    p.add_argument(
+        "--ingredient",
+        choices=episodes.INGREDIENTS,
+        default=episodes.DEFAULT_INGREDIENT,
+        help=f"content ingredient (default: {episodes.DEFAULT_INGREDIENT})",
+    )
+    p.add_argument(
+        "--effort",
+        choices=episodes.EFFORTS,
+        default=episodes.DEFAULT_EFFORT,
+        help=f"effort size (default: {episodes.DEFAULT_EFFORT})",
+    )
+    p.add_argument("--hook", default="", help="one-line hook (the first-15-seconds pitch)")
+    p.add_argument("--teaches", default="", help="what the episode teaches")
+    p.add_argument("--tags", default="", help="comma-separated tags")
 
     p = sub.add_parser("idea", help="fast idea capture (minimal idea episode)")
     p.add_argument("thought", help="the idea, in one line")
@@ -142,6 +228,10 @@ def _handlers() -> dict[str, Handler]:
     handlers: dict[str, Handler] = {
         name: _make_stub(name, step) for name, step in _STUB_STEPS.items()
     }
+    handlers["new"] = _episode_command("new", _cmd_new)
+    handlers["idea"] = _episode_command("idea", _cmd_idea)
+    handlers["list"] = _episode_command("list", _cmd_list)
+    handlers["show"] = _episode_command("show", _cmd_show)
     handlers["version"] = _cmd_version
     return handlers
 

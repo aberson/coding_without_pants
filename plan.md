@@ -558,6 +558,7 @@ session).
 - **Produces:** `src/cwp/episodes.py`, template content, `tests/test_episodes.py`
 - **Done when:** `cwp new "Test"` creates `001-test/` with all files + valid `meta.toml`; `cwp idea "x"` adds a minimal idea episode; `cwp list`/`cwp show 001` work; unit tests cover id/slug/collision/scan; an integration test drives `new → list` through the CLI.
 - **Depends on:** 1
+- **Status:** DONE (2026-07-16)
 
 ### Step 3: Lifecycle (status + next)
 - **Problem:** `lifecycle.py` (§5.3 permissive state machine, append-only history + UTC timestamps, `on-hold`/`cut`, warn-on-unusual-jump, `next` priority), wired to `cwp status`/`cwp next`.
