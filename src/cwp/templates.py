@@ -46,8 +46,8 @@ _PUBLISH_MD = """\
 # {title} — publish metadata
 
 <!-- PLACEHOLDER — `cwp publish {episode_id}` (Step 5) regenerates this file with
-     paste-ready YouTube metadata from meta.toml + script.md. Edit meta.toml
-     (title/hook/tags), not this file. -->
+     paste-ready YouTube metadata from meta.toml + any drafted blocks appended below
+     by `cwp draft`. Edit meta.toml (title/hook/tags), not this file. -->
 """
 
 _BRIEF_MD = """\

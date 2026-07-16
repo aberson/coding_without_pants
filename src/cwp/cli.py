@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, drafting, episodes, lifecycle
+from cwp import __version__, drafting, episodes, lifecycle, publishing
 from cwp.config import RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
@@ -27,7 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "publish": 5,
     "capture": 6,
     "brief": 7,
     "build": 9,
@@ -154,14 +153,19 @@ def _cmd_list(args: argparse.Namespace, episodes_dir: Path) -> int:
     return EXIT_OK
 
 
-def _cmd_status(args: argparse.Namespace, episodes_dir: Path) -> int:
-    transition = lifecycle.apply_status(episodes_dir, args.id, args.status)
+def _warn_unusual_jump(command: str, transition: lifecycle.Transition) -> None:
+    """The one warn-but-never-block §5.3 line — shared by ``status`` and ``publish --url``."""
     if transition.unusual_reason is not None:
         print(
-            f"cwp status: warning: unusual jump {transition.old_status} -> "
+            f"cwp {command}: warning: unusual jump {transition.old_status} -> "
             f"{transition.new_status} ({transition.unusual_reason}) — allowed, recorded",
             file=sys.stderr,
         )
+
+
+def _cmd_status(args: argparse.Namespace, episodes_dir: Path) -> int:
+    transition = lifecycle.apply_status(episodes_dir, args.id, args.status)
+    _warn_unusual_jump("status", transition)
     print(f"{transition.episode.id}: {transition.old_status} -> {transition.new_status}")
     if transition.published_at_stamped:
         print(f"published_at: {transition.episode.published_at}")
@@ -223,6 +227,28 @@ def _cmd_draft(args: argparse.Namespace, episodes_dir: Path) -> int:
         return EXIT_OK
     assert result.target is not None  # file kinds always write on success
     print(f"drafted {result.kind} -> {_display_path(result.target)}")
+    return EXIT_OK
+
+
+def _cmd_publish(args: argparse.Namespace, episodes_dir: Path) -> int:
+    """Stdout carries ONLY the paste block + checklist (+ ``--url`` record lines) so a
+    redirect stays paste-clean; warnings and the wrote-file note go to stderr."""
+    result = publishing.run_publish(episodes_dir, args.id, url=args.url)
+    for warning in result.warnings:
+        print(f"cwp publish: warning: {warning}", file=sys.stderr)
+    print(f"cwp publish: wrote {_display_path(result.publish_path)}", file=sys.stderr)
+    print(result.block.rstrip("\n"))
+    print()
+    print(publishing.render_checklist().rstrip("\n"))
+    transition = result.transition
+    if transition is None:  # no --url: publish prep only, status untouched
+        return EXIT_OK
+    _warn_unusual_jump("publish", transition)
+    print()
+    print(f"{transition.episode.id}: {transition.old_status} -> {transition.new_status}")
+    print(f"youtube_url: {transition.episode.youtube_url}")
+    if transition.published_at_stamped:
+        print(f"published_at: {transition.episode.published_at}")
     return EXIT_OK
 
 
@@ -319,6 +345,7 @@ def _handlers() -> dict[str, Handler]:
     handlers["status"] = _episode_command("status", _cmd_status)
     handlers["next"] = _episode_command("next", _cmd_next)
     handlers["draft"] = _episode_command("draft", _cmd_draft)
+    handlers["publish"] = _episode_command("publish", _cmd_publish)
     handlers["version"] = _cmd_version
     return handlers
 

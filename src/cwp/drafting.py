@@ -35,9 +35,11 @@ Draft targets — the DECIDE from plan.md §14 Step 4, recorded here:
 - ``title`` and ``description`` always print to stdout, AND are appended as a marked block
   to ``publish.md`` while that file still carries its Step-1 placeholder sentinel
   (``templates.PUBLISH_PLACEHOLDER_SENTINEL``). Step 5's ``cwp publish`` WHOLESALE-
-  regenerates publish.md from meta.toml + script.md, so the appended blocks are
-  pre-publish operator scratch — never inputs ``cwp publish`` reads. Once regeneration
-  removes the sentinel, those drafts are stdout-only; publish owns the file from then on.
+  regenerates publish.md, FOLDING those blocks in (drafted title/description win over its
+  auto-derived fields) and preserving them below the paste block; the block heading is
+  shared via :func:`publish_draft_heading` so the producer here and the parser in
+  ``publishing.py`` cannot drift. Once regeneration removes the sentinel, those drafts are
+  stdout-only; publish owns the file from then on.
 - Every block of content this module writes opens with the literal ``<!-- AI DRAFT -->``
   marker line (file-first line for script.md, block-first line for publish.md appends);
   Step 5's publish warns on markers still present at publish time.
@@ -69,6 +71,16 @@ FILE_KINDS = ("outline", "script")  # both replace script.md (module docstring)
 # DERIVED, never restated (single source of truth): the non-file kinds print to stdout
 # (+ the best-effort publish.md append). A drift test asserts the partition stays exact.
 STDOUT_KINDS = tuple(kind for kind in KINDS if kind not in FILE_KINDS)
+
+
+def publish_draft_heading(kind: str) -> str:
+    """The ``## <Kind> draft (cwp draft)`` heading :func:`_append_to_publish` writes.
+
+    Exported so Step 5's ``publishing.py`` parses back EXACTLY what this module appends —
+    one source of truth for the block shape (code-quality: producer/consumer drift).
+    """
+    return f"## {kind.capitalize()} draft (cwp draft)"
+
 
 _PREFLIGHT_PROMPT = "Reply with exactly: ok"
 _INSTALL_FIX_IT = (
@@ -395,7 +407,7 @@ def _append_to_publish(publish_path: Path, kind: str, text: str, partial_path: P
         ) from exc
     if templates.PUBLISH_PLACEHOLDER_SENTINEL not in current:
         return None
-    block = f"\n{AI_DRAFT_MARKER}\n## {kind.capitalize()} draft (cwp draft)\n\n{text.strip()}\n"
+    block = f"\n{AI_DRAFT_MARKER}\n{publish_draft_heading(kind)}\n\n{text.strip()}\n"
     payload = current.rstrip("\n") + "\n" + block
     episodes.atomic_write_bytes(publish_path, payload.encode("utf-8"))
     return publish_path

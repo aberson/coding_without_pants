@@ -594,6 +594,7 @@ session).
 - **Produces:** `src/cwp/publishing.py`, `tests/test_publishing.py`
 - **Done when:** `cwp publish 001` writes an ordered Title/Description/Tags/Thumbnail-text block + warns on missing fields/markers + prints the "Before you publish" checklist; `cwp publish 001 --url <u>` records the URL, sets `published_at`, transitions to `published`; tests cover ordering/validation/record/checklist.
 - **Depends on:** 3, 4
+- **Status:** DONE (2026-07-16)
 
 ### Step 6: Capture (faster-whisper)
 - **Problem:** `capture.py` — a `faster-whisper` wrapper (local, default `small`, `--model medium`
