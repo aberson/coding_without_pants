@@ -534,14 +534,19 @@ session).
   `ignore_missing_imports` for `faster_whisper.*`/`ctranslate2.*`), AND author the three root SoT
   docs verbatim from this plan's appendices + research §2: `voice.md` (Appendix A),
   `build-contract.md` (Appendix B), `pantsless-test.md` (Appendix E) — Steps 4 and 9 consume them.
-  Also confirm the `claude -p` context story (does it load cwd CLAUDE.md? pick neutral-cwd or a
-  verified suppression flag per §3.2) and record the answer in this plan.
+  (Confirmed: `claude -p` DOES auto-discover cwd CLAUDE.md by default — claude v2.1.170 `--help`
+  documents `--bare` as the mode that skips "CLAUDE.md auto-discovery", i.e. discovery is on unless
+  suppressed; `--bare` also restricts auth to `ANTHROPIC_API_KEY` (OAuth never read), so it is
+  unusable with this project's subscription auth, and `--safe-mode` disables ALL customizations
+  (CLAUDE.md included) with OAuth intact but is a troubleshooting mode — neutral-cwd (temp dir)
+  stands as the chosen mechanism per §3.2, with `--safe-mode` as the verified fallback flag.)
 - **Type:** code
 - **Issue:** #2
 - **Flags:** --reviewers code --isolation worktree
 - **Produces:** `pyproject.toml`, `src/cwp/{__init__,__main__,cli,config,templates}.py`, `.gitignore`, ruff/mypy config, `voice.md`, `build-contract.md`, `pantsless-test.md`
 - **Done when:** `uv run cwp --help` lists all sub-commands fast (no heavy imports at module top); `uv run cwp version` prints a version; the three root SoT files exist with the appendix content; a test asserts `.gitignore` contains the §4.3 privacy patterns; a test prints a non-ASCII title under captured output without raising; `ruff check .` and `mypy src` clean.
 - **Depends on:** none
+- **Status:** DONE (2026-07-16)
 
 ### Step 2: Episode model + new/idea/list/show
 - **Problem:** `episodes.py` (Episode dataclass, §4.1 id/slug gen, atomic `meta.toml` read/write,

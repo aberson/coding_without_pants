@@ -1,0 +1,30 @@
+# Kid privacy + media (plan.md §4.3) — tests/test_repo_files.py asserts each pattern below exists.
+# Raw audio/video (phone formats included) and the WHOLE per-episode capture dir (transcript
+# included) never reach the public repo.
+media/
+private/
+clips/
+*.mp4
+*.mov
+*.wav
+*.m4a
+*.mp3
+*.ogg
+*.m4v
+*.3gp
+episodes/*/capture/
+episodes/*/project/.repair/
+
+# Python / tooling
+.venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+
+# Workspace session artifacts (parallel-session safety)
+.plan-expedite-state*
+.ui-review-evidence/
+.build-step/

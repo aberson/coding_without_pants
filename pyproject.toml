@@ -1,0 +1,56 @@
+[project]
+name = "cwp"
+description = "Coding without Pants — one CLI, two loops: the Channel Loop and the Pantsless Build."
+readme = "README.md"
+requires-python = ">=3.12"
+dynamic = ["version"]
+dependencies = [
+    "tomli-w>=1.1",
+    # RUNTIME deps, not dev: capture.py imports faster_whisper inside `cwp capture`,
+    # and verify.py imports playwright inside `cwp build` (plan.md §2). NEVER imported
+    # at module top — lazy imports inside subcommand handlers only.
+    "faster-whisper>=1.1",
+    "playwright>=1.49",
+]
+
+[project.scripts]
+cwp = "cwp.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+# Single source of truth for the version string: src/cwp/__init__.py.
+path = "src/cwp/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cwp"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+
+[[tool.mypy.overrides]]
+# Added proactively for Step 6 (capture.py): these ship no type stubs.
+module = ["faster_whisper.*", "ctranslate2.*"]
+ignore_missing_imports = true
