@@ -318,16 +318,15 @@ def read_meta(meta_path: Path) -> Episode:
     return _episode_from_dict(data, source=meta_path)
 
 
-def write_meta(episode_dir: Path, episode: Episode) -> Path:
-    """Atomically write ``<episode_dir>/meta.toml`` (temp file + ``os.replace``).
+def atomic_write_bytes(target: Path, payload: bytes) -> None:
+    """Atomically write *payload* to *target* (same-dir temp file + ``os.replace``).
 
     The temp file lives in the SAME directory so the replace is same-volume atomic —
     a killed run leaves either the old file or the new file, never a torn one (§4.3).
+    The ONE atomic-write helper in the package: ``write_meta`` uses it here, and
+    ``drafting.py`` (Step 4) imports it for draft targets + partial-output flushes.
     """
-    episode_dir.mkdir(parents=True, exist_ok=True)
-    target = episode_dir / META_FILENAME
-    payload = tomli_w.dumps(episode_to_dict(episode)).encode("utf-8")
-    fd, tmp_name = tempfile.mkstemp(dir=episode_dir, prefix=".meta-", suffix=".tmp")
+    fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=f".{target.stem}-", suffix=".tmp")
     tmp_path = Path(tmp_name)
     try:
         with os.fdopen(fd, "wb") as handle:
@@ -338,6 +337,13 @@ def write_meta(episode_dir: Path, episode: Episode) -> Path:
     except BaseException:
         tmp_path.unlink(missing_ok=True)
         raise
+
+
+def write_meta(episode_dir: Path, episode: Episode) -> Path:
+    """Atomically write ``<episode_dir>/meta.toml`` via :func:`atomic_write_bytes`."""
+    episode_dir.mkdir(parents=True, exist_ok=True)
+    target = episode_dir / META_FILENAME
+    atomic_write_bytes(target, tomli_w.dumps(episode_to_dict(episode)).encode("utf-8"))
     return target
 
 

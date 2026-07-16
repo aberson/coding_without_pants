@@ -37,6 +37,11 @@ _(the first 15 seconds — why keep watching?)_
 
 """
 
+# The sentinel drafting.py checks before appending title/description drafts into
+# publish.md: present only while publish.md is still the placeholder below; `cwp publish`
+# (Step 5) regenerates the file without it. A drift test asserts it stays in _PUBLISH_MD.
+PUBLISH_PLACEHOLDER_SENTINEL = "<!-- PLACEHOLDER"
+
 _PUBLISH_MD = """\
 # {title} — publish metadata
 

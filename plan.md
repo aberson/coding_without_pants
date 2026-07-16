@@ -584,6 +584,7 @@ session).
 - **Produces:** `src/cwp/drafting.py`, `tests/test_drafting.py`
 - **Done when:** `cwp draft 001 title --dry-run` prints the assembled prompt without calling `claude`; with a fake `claude` shim on PATH, `cwp draft 001 script` writes marked content; all four variants (`outline|script|title|description`) run through the one shared code path with a test each; a missing/unauthed `claude` prints fix-it text and exits 2; tests **mock the `claude` boundary** (no real API in CI) and cover the auth-fail path.
 - **Depends on:** 1, 2
+- **Status:** DONE (2026-07-16)
 
 ### Step 5: Publish-prep (Channel Loop)
 - **Problem:** `publishing.py` — assemble `publish.md` into one Studio-ordered paste block, validate required fields, warn on remaining `<!-- AI DRAFT -->` markers, print the unconditional "Before you publish" checklist (real-name scan + Made-for-Kids audience setting) beside the paste block, record `youtube_url` + set `published` via `--url` — wired to `cwp publish`.

@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, episodes, lifecycle
+from cwp import __version__, drafting, episodes, lifecycle
 from cwp.config import RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
@@ -27,7 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "draft": 4,
     "publish": 5,
     "capture": 6,
     "brief": 7,
@@ -192,6 +191,41 @@ def _cmd_show(args: argparse.Namespace, episodes_dir: Path) -> int:
     return EXIT_OK
 
 
+def _cmd_draft(args: argparse.Namespace, episodes_dir: Path) -> int:
+    # _episode_command hands only episodes_dir; re-derive Paths for voice.md (the wrapper
+    # already proved the root walk succeeds, so this cannot raise here).
+    voice_md = get_paths().voice_md
+    try:
+        result = drafting.run_draft(
+            episodes_dir, voice_md, args.id, args.kind, dry_run=args.dry_run
+        )
+    except drafting.DraftEnvError as exc:  # claude missing / unauthed / timed out
+        print(f"cwp draft: {exc}", file=sys.stderr)
+        return EXIT_ENV_ERROR
+    text = result.text
+    if text is None:  # --dry-run: the assembled prompt IS the output
+        print(result.prompt)
+        return EXIT_OK
+    if result.to_stdout:  # title/description: the draft itself goes to stdout
+        print(text.strip())
+        if result.target is not None:
+            print(
+                f"cwp draft: also appended to {_display_path(result.target)}"
+                f" (review, then remove the {drafting.AI_DRAFT_MARKER} marker)",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "cwp draft: publish.md already regenerated (or missing) — "
+                "draft printed to stdout only",
+                file=sys.stderr,
+            )
+        return EXIT_OK
+    assert result.target is not None  # file kinds always write on success
+    print(f"drafted {result.kind} -> {_display_path(result.target)}")
+    return EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = _Parser(
         prog="cwp",
@@ -245,8 +279,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("id", help="episode id or seq")
     p.add_argument(
         "kind",
-        choices=("outline", "script", "title", "description"),
+        choices=drafting.KINDS,
         help="what to draft",
+    )
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the fully-assembled prompt and exit — no claude call, no preflight",
     )
 
     p = sub.add_parser("publish", help="paste-ready YouTube metadata / mark published")
@@ -279,6 +318,7 @@ def _handlers() -> dict[str, Handler]:
     handlers["show"] = _episode_command("show", _cmd_show)
     handlers["status"] = _episode_command("status", _cmd_status)
     handlers["next"] = _episode_command("next", _cmd_next)
+    handlers["draft"] = _episode_command("draft", _cmd_draft)
     handlers["version"] = _cmd_version
     return handlers
 
