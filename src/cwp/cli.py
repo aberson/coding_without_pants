@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, episodes
+from cwp import __version__, episodes, lifecycle
 from cwp.config import RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
@@ -27,8 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "status": 3,
-    "next": 3,
     "draft": 4,
     "publish": 5,
     "capture": 6,
@@ -135,14 +133,56 @@ def _cmd_idea(args: argparse.Namespace, episodes_dir: Path) -> int:
     return _report_created("idea", created, "captured idea")
 
 
-def _cmd_list(_args: argparse.Namespace, episodes_dir: Path) -> int:
+def _cmd_list(args: argparse.Namespace, episodes_dir: Path) -> int:
     result = episodes.scan_episodes(episodes_dir)
     for warning in result.warnings:
         print(f"cwp list: warning: {warning}", file=sys.stderr)
     if not result.episodes:
         print('no episodes yet — try: cwp new "<title>"')
         return EXIT_OK
-    print(episodes.format_table(result.episodes))
+    visible = [
+        episode
+        for episode in result.episodes
+        if args.all or lifecycle.visible_in_default_list(episode)
+    ]
+    hidden = len(result.episodes) - len(visible)
+    if hidden:
+        print(f"cwp list: {hidden} cut hidden (cwp list --all shows them)", file=sys.stderr)
+    if not visible:
+        print(f"no episodes to list — {hidden} cut hidden (try: cwp list --all)")
+        return EXIT_OK
+    print(episodes.format_table(visible))
+    return EXIT_OK
+
+
+def _cmd_status(args: argparse.Namespace, episodes_dir: Path) -> int:
+    transition = lifecycle.apply_status(episodes_dir, args.id, args.status)
+    if transition.unusual_reason is not None:
+        print(
+            f"cwp status: warning: unusual jump {transition.old_status} -> "
+            f"{transition.new_status} ({transition.unusual_reason}) — allowed, recorded",
+            file=sys.stderr,
+        )
+    print(f"{transition.episode.id}: {transition.old_status} -> {transition.new_status}")
+    if transition.published_at_stamped:
+        print(f"published_at: {transition.episode.published_at}")
+    return EXIT_OK
+
+
+def _cmd_next(_args: argparse.Namespace, episodes_dir: Path) -> int:
+    result = episodes.scan_episodes(episodes_dir)
+    for warning in result.warnings:
+        print(f"cwp next: warning: {warning}", file=sys.stderr)
+    suggestion = lifecycle.pick_next(result.episodes)
+    if suggestion is None:
+        print(
+            "nothing in flight — every episode is published, on-hold, or cut"
+            ' (or none exist yet); try: cwp new "<title>"'
+        )
+        return EXIT_OK
+    episode = suggestion.episode
+    print(f"{episode.id}  [{episode.status}]  {episode.title}")
+    print(f"next: {suggestion.action}")
     return EXIT_OK
 
 
@@ -182,7 +222,12 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("idea", help="fast idea capture (minimal idea episode)")
     p.add_argument("thought", help="the idea, in one line")
 
-    sub.add_parser("list", help="derived episode table: status + cycle time")
+    p = sub.add_parser("list", help="derived episode table: status + cycle time")
+    p.add_argument(
+        "--all",
+        action="store_true",
+        help="include cut episodes (hidden from the default list)",
+    )
 
     p = sub.add_parser("show", help="detail for one episode")
     p.add_argument("id", help="episode id or seq (e.g. 001)")
@@ -232,6 +277,8 @@ def _handlers() -> dict[str, Handler]:
     handlers["idea"] = _episode_command("idea", _cmd_idea)
     handlers["list"] = _episode_command("list", _cmd_list)
     handlers["show"] = _episode_command("show", _cmd_show)
+    handlers["status"] = _episode_command("status", _cmd_status)
+    handlers["next"] = _episode_command("next", _cmd_next)
     handlers["version"] = _cmd_version
     return handlers
 

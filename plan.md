@@ -568,6 +568,7 @@ session).
 - **Produces:** `src/cwp/lifecycle.py`, `tests/test_lifecycle.py`
 - **Done when:** `cwp status 001 built` records the transition; a backward transition warns but succeeds; `cwp status 001 cut` hides it from default `cwp list`; `cwp next` returns the right episode + action; tests cover forward/backward/terminal + `next` tie-breaking.
 - **Depends on:** 2
+- **Status:** DONE (2026-07-16)
 
 ### Step 4: AI drafting (Channel Loop)
 - **Problem:** `drafting.py` — assemble a prompt from `voice.md` (seeded in Step 1) + episode
