@@ -39,6 +39,7 @@ uv run playwright install chromium        # once, for the toy verifier
 # system ffmpeg NOT required — faster-whisper decodes via bundled PyAV (verified)
 
 # Channel Loop
+uv run cwp seed                           # create the 12-episode idea bank (idempotent; plan §5.5)
 uv run cwp idea "<thought>"               # fast idea capture
 uv run cwp new "<title>"                  # create an episode folder (idea status)
 uv run cwp list                           # derived table of episodes + status + cycle time
@@ -91,13 +92,18 @@ Key invariants: episode **id/folder immutable** (retitle changes `title` only); 
 
 ## Current state
 
-Plan written (Fable pre-build review applied 2026-07-15 — see `docs/plan-review-fable.md`), no code
-yet. Build via `/build-phase` (11 automated code steps + 3 manual steps M1/M1.5/M2 — M1.5 is the
-solo live-toolchain dry-run before the kid session); default flags `--reviewers code --isolation
-worktree`, except Steps 8–9 escalate to `--reviewers deep` (verifier = measurement instrument,
-build engine = reliability core). v1 ships BOTH loops (Channel + the Pantsless Build). v2 (later,
-`/plan-feature`) = a public playable-toy gallery + architecture writeup. Update this section at the
-end of each phase via `/repo-update`.
+Steps 1–10 built: the full `cwp` surface ships — Channel Loop (`seed`/`idea`/`new`/`list`/`show`/
+`next`/`status`/`draft`/`publish`) and the Pantsless Build (`capture`/`brief`/`build`), the
+calibrated toy verifier, the 12-episode idea bank (`cwp seed`, plan §5.5), and the docs (this file,
+`README.md`, `docs/production-notes.md`; the three root SoT docs — `voice.md`/`build-contract.md`/
+`pantsless-test.md` — remain frozen from Step 1 and verified against the plan appendices). Remaining:
+**Step 11** (end-to-end smoke gate through both loops) and the operator-driven manual steps **M1**
+(dogfood the Channel Loop), **M1.5** (solo live-toolchain Pantsless dry-run), **M2** (the kid
+session — the heart of the channel). Built via `/build-phase` with default flags `--reviewers code
+--isolation worktree`, Steps 8–9 escalated to `--reviewers deep` (verifier = measurement instrument,
+build engine = reliability core). v1 ships BOTH loops. v2 (later, `/plan-feature`) = a public
+playable-toy gallery + architecture writeup. Update this section at the end of each phase via
+`/repo-update`.
 
 ## Environment requirements
 

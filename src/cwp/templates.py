@@ -16,10 +16,170 @@ are NOT templates — they were authored once, directly at the repo root, in Ste
 from __future__ import annotations
 
 import html
+from dataclasses import dataclass
 
-# TODO(Step 10): the 12-episode idea-bank seed data (plan.md §5.5 / Appendix D) lands
-# here as structured rows (title, ingredient, effort, teaches, hook) seeded via
-# episodes.create_episode.
+
+@dataclass(frozen=True)
+class SeedEpisode:
+    """One row of the plan.md §5.5 seed bank (hooks: Appendix D) — pure data.
+
+    ``cwp seed`` feeds each row through :func:`cwp.episodes.create_episode`, so this
+    module never imports ``episodes.py`` (it imports *us*, and a cycle would break the
+    fast ``cwp --help`` import path). The ``hook``/``teaches`` strings carry non-ASCII
+    (``≤``, ``–``, ``→``); the file is UTF-8 and these are ordinary ``str`` literals, so
+    ``cwp list``'s UTF-8-reconfigured stdout (``cli._reconfigure_utf8``) renders them
+    without a ``UnicodeEncodeError`` on a Windows cp1252 console or a captured pipe.
+    """
+
+    seq: int
+    title: str
+    ingredient: str  # one of episodes.INGREDIENTS
+    effort: str  # one of episodes.EFFORTS
+    teaches: str
+    hook: str
+    kid_usable: bool
+    tags: tuple[str, ...] = ()
+
+
+# The 12-episode idea bank (plan.md §5.5 table + Appendix D hooks): ranked easiest-first,
+# balanced 3/3/3/3 across ingredients (neetcode / hak / kid / xkcd), seqs 001–012. Seeded
+# as ``idea``-status episodes by ``cwp seed`` (idempotent — see episodes.seed_episodes).
+# ``kid_usable`` follows the toy, not the ingredient: every toy here passes the Pantsless
+# Test EXCEPT 002 (an adult heat-index gag readout a 4-year-old does not operate). The
+# three ``kid``-ingredient episodes (005 / 007 / 012) are kid-operated by definition.
+SEED_EPISODES: tuple[SeedEpisode, ...] = (
+    SeedEpisode(
+        seq=1,
+        title="The Number-Guessing Machine (Binary Search, No Cheating)",
+        ingredient="neetcode",
+        effort="S",
+        teaches="binary search",
+        hook=(
+            "20 Questions as an app that always wins in ≤7 guesses, "
+            'then races Dad guessing "randomly."'
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=2,
+        title="The Precise Moment Pants Become Optional: A Live Hawaii Pants Index",
+        ingredient="hak",
+        effort="S",
+        teaches="formula/heat-index modeling",
+        hook="A dead-serious heat-index formula for exactly when pants stop being load-bearing.",
+        kid_usable=False,
+    ),
+    SeedEpisode(
+        seq=3,
+        title="The Sock-Matching Machine (Two Sum, But Socks)",
+        ingredient="neetcode",
+        effort="S",
+        teaches="hash-map pairing (Two Sum)",
+        hook=(
+            "The infamous interview question, solved for pairing "
+            "a preschooler's socks after laundry."
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=4,
+        title="The Unbeatable Cookie-Splitter",
+        ingredient="hak",
+        effort="S",
+        teaches='"I cut, you choose" fairness/game theory',
+        hook='Sibling cookie warfare ended with the "I cut, you choose" theorem in one button.',
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=5,
+        title="I Let My 4-Year-Old Prompt Claude (No Notes)",
+        ingredient="kid",
+        effort="S",
+        teaches="prompting / AI as a filmed topic",
+        hook=(
+            "Hand the keyboard to a kid who can't spell; "
+            "build exactly what he types, live, unedited."
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=6,
+        title="FizzBuzz, But It's a Dinosaur",
+        ingredient="neetcode",
+        effort="S",
+        teaches="modulo / FizzBuzz",
+        hook=(
+            "Five clean lines, then a big-button counting toy "
+            'that roars instead of printing "Fizz."'
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=7,
+        title="Is the Dice Cheating? (My Daughter Runs the Audit)",
+        ingredient="kid",
+        effort="S",
+        teaches="uniformity / chi-square intuition",
+        hook=(
+            "100 rolls into a tally app running a real fairness test; "
+            'she\'s cleared to yell "CHEATER."'
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=8,
+        title="A Bedtime Story Picker That Never Repeats (Until It Has To)",
+        ingredient="hak",
+        effort="S",
+        teaches="Fisher–Yates shuffle",
+        hook="A calm Fisher–Yates walk landing on one mashable PICK MY STORY button.",
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=9,
+        title="Are We There Yet? (An Honest Answer, Powered by Math)",
+        ingredient="xkcd",
+        effort="M",
+        teaches="haversine distance",
+        hook="Real haversine distance under one big honest button.",
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=10,
+        title="Shortest Path to the Potty (An Emergency BFS)",
+        ingredient="xkcd",
+        effort="M",
+        teaches="BFS / shortest path",
+        hook=(
+            "Kid crayons a house-maze; BFS finds the provably shortest route before it's too late."
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=11,
+        title="Scream-to-Watts: Could Bath-Time Meltdowns Power the House?",
+        ingredient="xkcd",
+        effort="M",
+        teaches="decibel → energy physics",
+        hook=(
+            "Real decibel→energy physics off a live mic; "
+            "a dial answers whether one tantrum runs the fridge."
+        ),
+        kid_usable=True,
+    ),
+    SeedEpisode(
+        seq=12,
+        title="Lego Ouch Calories: Barefoot Steps Converted to Calories Burned",
+        ingredient="kid",
+        effort="S",
+        teaches="light arithmetic modeling",
+        hook=(
+            "Every Lego brick underfoot = a calorie; the kid taps "
+            "a live tally, we do the excruciating math."
+        ),
+        kid_usable=True,
+    ),
+)
 
 _SCRIPT_MD = """\
 # {title}

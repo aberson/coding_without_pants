@@ -15,6 +15,7 @@ from cwp.cli import _STUB_STEPS, EXIT_OK, EXIT_USER_ERROR, _reconfigure_utf8, ma
 ALL_COMMANDS = [
     "new",
     "idea",
+    "seed",
     "list",
     "show",
     "status",

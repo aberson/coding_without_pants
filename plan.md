@@ -685,6 +685,7 @@ session).
 - **Produces:** `docs/production-notes.md`, 12 seeded `episodes/*/`, `README.md`, updated `CLAUDE.md`
 - **Done when:** `cwp list` shows all 12 seeds with correct ingredient/effort, under captured UTF-8 output (the seed hooks contain non-ASCII); `README.md` quickstart matches the actual CLI; a test asserts the 12 seeds load + validate.
 - **Depends on:** 2
+- **Status:** DONE (2026-07-17)
 
 ### Step 11: End-to-end smoke gate (both loops)
 - **Problem:** One integration test through the production `cwp` entry point on a temp episode:
@@ -708,6 +709,7 @@ session).
 - **Commands:**
   ```powershell
   cd c:\Users\abero\dev\coding_without_pants
+  uv run cwp seed  # once — materializes the 12-episode idea bank (idempotent); M1/M1.5/M2 need it
   uv run cwp next
   uv run cwp draft 001 outline
   # …edit script.md, build the toy (by hand or via the Pantsless Build)…

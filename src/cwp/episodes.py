@@ -130,6 +130,16 @@ class ScanResult:
     warnings: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class SeedResult:
+    """What ``seed_episodes`` did: freshly-created episodes, seqs skipped (already
+    present), and any per-episode ``create_episode`` warnings (e.g. duplicate slug)."""
+
+    created: tuple[Episode, ...]
+    skipped: tuple[int, ...]
+    warnings: tuple[str, ...]
+
+
 def utc_now_iso() -> str:
     """Current UTC time in the §4.1 pinned shape (``2026-07-15T00:00:00Z``)."""
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -396,12 +406,16 @@ def create_episode(
     teaches: str = "",
     tags: Sequence[str] = (),
     now: str | None = None,
+    seq: int | None = None,
 ) -> CreatedEpisode:
     """Create ``episodes/<seq>-<slug>/`` with meta.toml + all §4.2 files.
 
-    seq = ``max(existing) + 1``; the id/folder is immutable from here on. A duplicate
-    slug under a different seq is ALLOWED and returns a warning (§4.1). *now*
-    overrides ``created_at`` (tests); default is real UTC now.
+    seq defaults to ``max(existing) + 1``; the id/folder is immutable from here on. A
+    duplicate slug under a different seq is ALLOWED and returns a warning (§4.1). *now*
+    overrides ``created_at`` (tests); default is real UTC now. *seq* PINS the sequence
+    number instead of auto-assigning it — used by :func:`seed_episodes` to land each
+    bank row on its §5.5 seq regardless of gaps; it must be ≥ 1 and its folder must not
+    already exist (a collision raises :class:`EpisodeError` at the ``mkdir`` below).
     """
     for value, name, allowed in (
         (status, "status", STATUSES),
@@ -411,7 +425,7 @@ def create_episode(
         if value not in allowed:
             raise EpisodeError(f"Invalid {name} {value!r} (expected one of: {', '.join(allowed)})")
     slug = slugify(title)
-    seq = next_seq(episodes_dir)
+    seq = next_seq(episodes_dir) if seq is None else seq
     episode_id = f"{format_seq(seq)}-{slug}"
     warnings: list[str] = []
     for existing_dir, match in _episode_dir_matches(episodes_dir):
@@ -444,6 +458,47 @@ def create_episode(
     write_meta(directory, episode)
     write_episode_files(directory, episode)
     return CreatedEpisode(episode=episode, directory=directory, warnings=tuple(warnings))
+
+
+def seed_episodes(episodes_dir: Path, *, now: str | None = None) -> SeedResult:
+    """Idempotently create the 12-episode idea bank (``templates.SEED_EPISODES``).
+
+    Each bank row becomes an ``idea``-status episode via :func:`create_episode` with its
+    §5.5 seq PINNED (``seq=`` override), so id/slug/``meta.toml`` are generated
+    consistently (never hand-written) and every row lands on its exact plan seq.
+
+    Fully per-seq idempotent: a row whose seq is already present is SKIPPED (re-running
+    never duplicates), and skipping one seq never aborts the rest — a mid-sequence GAP
+    (e.g. the operator hand-deleted one seeded folder) is healed by recreating only the
+    missing rows at their pinned seqs, while occupied seqs (seed or unrelated content)
+    are left untouched. *now* overrides ``created_at`` (tests); default is real UTC now.
+    """
+    episodes_dir.mkdir(parents=True, exist_ok=True)
+    existing = {int(match["seq"]) for _directory, match in _episode_dir_matches(episodes_dir)}
+    created: list[Episode] = []
+    skipped: list[int] = []
+    warnings: list[str] = []
+    for seed in templates.SEED_EPISODES:
+        if seed.seq in existing:
+            skipped.append(seed.seq)
+            continue
+        result = create_episode(
+            episodes_dir,
+            seed.title,
+            status="idea",
+            ingredient=seed.ingredient,
+            effort=seed.effort,
+            kid_usable=seed.kid_usable,
+            hook=seed.hook,
+            teaches=seed.teaches,
+            tags=seed.tags,
+            now=now,
+            seq=seed.seq,
+        )
+        created.append(result.episode)
+        warnings.extend(result.warnings)
+        existing.add(seed.seq)
+    return SeedResult(created=tuple(created), skipped=tuple(skipped), warnings=tuple(warnings))
 
 
 def scan_episodes(episodes_dir: Path) -> ScanResult:

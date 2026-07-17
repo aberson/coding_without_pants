@@ -138,6 +138,29 @@ def _cmd_idea(args: argparse.Namespace, episodes_dir: Path) -> int:
     return _report_created("idea", created, "captured idea")
 
 
+def _cmd_seed(_args: argparse.Namespace, episodes_dir: Path) -> int:
+    """Create the 12-episode idea bank (plan.md §5.5), idempotently. Created ids go to
+    stdout with a summary line; skipped seqs (already occupied) + domain warnings go to
+    stderr. Idempotent + gap-healing — a full re-run reports 'already fully seeded', a
+    partial run reports how many were created vs. how many seqs were already occupied."""
+    result = episodes.seed_episodes(episodes_dir)
+    for warning in result.warnings:
+        print(f"cwp seed: warning: {warning}", file=sys.stderr)
+    for episode in result.created:
+        print(f"seeded {episode.id}")
+    created_n, skipped_n = len(result.created), len(result.skipped)
+    if skipped_n:
+        seqs = ", ".join(episodes.format_seq(seq) for seq in result.skipped)
+        print(f"cwp seed: {skipped_n} seq(s) already occupied, skipped ({seqs})", file=sys.stderr)
+    if created_n == 0:
+        print(f"idea bank already fully seeded — all {skipped_n} seq(s) present (nothing to do)")
+    elif skipped_n:
+        print(f"seeded {created_n} episode(s), {skipped_n} seq(s) already occupied — try: cwp list")
+    else:
+        print(f"seeded {created_n} episode(s) — try: cwp list")
+    return EXIT_OK
+
+
 def _cmd_list(args: argparse.Namespace, episodes_dir: Path) -> int:
     result = episodes.scan_episodes(episodes_dir)
     for warning in result.warnings:
@@ -381,6 +404,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("idea", help="fast idea capture (minimal idea episode)")
     p.add_argument("thought", help="the idea, in one line")
 
+    sub.add_parser("seed", help="create the 12-episode idea bank (idempotent; skips existing seqs)")
+
     p = sub.add_parser("list", help="derived episode table: status + cycle time")
     p.add_argument(
         "--all",
@@ -455,6 +480,7 @@ def _handlers() -> dict[str, Handler]:
     }
     handlers["new"] = _episode_command("new", _cmd_new)
     handlers["idea"] = _episode_command("idea", _cmd_idea)
+    handlers["seed"] = _episode_command("seed", _cmd_seed)
     handlers["list"] = _episode_command("list", _cmd_list)
     handlers["show"] = _episode_command("show", _cmd_show)
     handlers["status"] = _episode_command("status", _cmd_status)

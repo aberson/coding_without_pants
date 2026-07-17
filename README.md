@@ -48,18 +48,26 @@ No backend, no database, no server, no ports, no PyTorch.
 ```powershell
 uv sync                                  # venv + deps (tomli-w, faster-whisper, playwright)
 uv run playwright install chromium       # once, for the toy verifier
+uv run cwp seed                          # once — materializes the 12-episode idea bank (idempotent)
 uv run cwp --help
 ```
 
-The first `cwp capture` downloads the Whisper model once (~460 MB), then runs fully offline.
+`cwp seed` creates the 12 starter episodes (plan §5.5) as `idea`-status folders under
+`episodes/`; it is idempotent (safe to re-run — it skips seqs already present) and the manual
+dogfood steps (M1/M1.5/M2) reference those episodes, so run it once before them. The first
+`cwp capture` downloads the Whisper model once (~460 MB), then runs fully offline.
 
 ## Usage
 
 ```powershell
 # Channel Loop
+uv run cwp idea "a button that burps the alphabet"   # fast idea capture
 uv run cwp new "The Sock-Matching Machine (Two Sum, But Socks)"
 uv run cwp list                           # derived episode table + cycle time
+uv run cwp show 003                       # detail for one episode
+uv run cwp next                           # which episode to work on + its next action
 uv run cwp draft 003 script               # AI draft in the channel voice
+uv run cwp status 003 recorded            # advance/change the lifecycle state
 uv run cwp publish 003 --url https://youtu.be/XXXX
 
 # The Pantsless Build
@@ -67,6 +75,9 @@ uv run cwp capture 005 --audio clips/wish.wav   # local Whisper → transcript
 uv run cwp brief 005                            # noisy transcript → build brief
 uv run cwp build 005                            # generate + verify + repair → project/index.html
 ```
+
+The full command surface: `seed`, `idea`, `new`, `list`, `show`, `next`, `status`,
+`draft`, `publish`, `capture`, `brief`, `build`, `version` (`cwp --help`).
 
 ## Key design decisions
 
@@ -98,7 +109,10 @@ coding_without_pants/
 
 ## Status
 
-Pre-build: the plan is written and reviewed ([docs/plan-review-fable.md](docs/plan-review-fable.md));
-code lands via the build steps in [plan.md](plan.md) §14. v1 acceptance: one episode reaches a
+Both loops are built: all Channel Loop and Pantsless Build commands ship (Steps 1–10 of
+[plan.md](plan.md) §14), the toy verifier is calibrated against golden + single-defect
+fixtures, and the 12-episode idea bank is available via `cwp seed`. Remaining before v1:
+the end-to-end smoke gate (Step 11) and the operator dogfood steps (M1 Channel Loop, M1.5
+solo Pantsless dry-run, M2 the kid session). v1 acceptance: one episode reaches a
 paste-ready `publish.md`, and one real kid clip goes capture → brief → build → a verified,
-kid-usable toy end-to-end.
+kid-usable toy end-to-end. Plan review: [docs/plan-review-fable.md](docs/plan-review-fable.md).
