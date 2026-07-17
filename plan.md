@@ -505,6 +505,13 @@ job signal for free.** No separate portfolio grind.
 
 ## 14. Development Process
 
+> **Build status (2026-07-17): automated span COMPLETE.** All 11 code steps below are
+> `**Status:** DONE` and pushed to `origin/main @ cae0e12` (issues #2–#12 closed); **409 tests
+> passing, 0 type errors, 0 lint violations.** Steps 8 (verifier) and 9 (build engine) each passed
+> the full six-lens `/review-deep` gate; the Step 11 smoke gate was confirmed *real* by injected-drift
+> proof. Follow-up backlog (not blocking v1): #16, #17. **Remaining is operator-only:** run
+> `cwp seed` once, then Manual Steps **M1 → M1.5 → M2** (they need real `claude` + Whisper + the kid).
+
 Built with `/build-phase` walking the Automated Steps below. Default flags:
 `--reviewers code --isolation worktree` (the tool is a CLI; the toy HTML is *content*, not the tool's
 UI, and Playwright is a test tool — so `code` reviewers + calibration tests are the gate, no runtime

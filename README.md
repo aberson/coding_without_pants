@@ -109,10 +109,17 @@ coding_without_pants/
 
 ## Status
 
-Both loops are built: all Channel Loop and Pantsless Build commands ship (Steps 1–10 of
-[plan.md](plan.md) §14), the toy verifier is calibrated against golden + single-defect
-fixtures, and the 12-episode idea bank is available via `cwp seed`. Remaining before v1:
-the end-to-end smoke gate (Step 11) and the operator dogfood steps (M1 Channel Loop, M1.5
-solo Pantsless dry-run, M2 the kid session). v1 acceptance: one episode reaches a
-paste-ready `publish.md`, and one real kid clip goes capture → brief → build → a verified,
-kid-usable toy end-to-end. Plan review: [docs/plan-review-fable.md](docs/plan-review-fable.md).
+**Automated build complete** — all 11 code steps of [plan.md](plan.md) §14 shipped (issues
+#2–#12 closed), 409 tests passing, 0 type errors, 0 lint violations. Both loops are built end
+to end: the full Channel Loop (`seed`/`idea`/`new`/`list`/`show`/`next`/`status`/`draft`/`publish`)
+and the Pantsless Build (`capture`/`brief`/`build`), a toy verifier calibrated against golden +
+single-defect fixtures (with a network-block belt so untrusted generated HTML can't phone home),
+the reliability-core build loop (generate → verify → repair → commit, never ships a broken toy),
+the 12-episode idea bank via `cwp seed`, and an end-to-end smoke gate proving both loops
+round-trip. The verifier and build engine each passed a full six-lens `/review-deep` gate.
+
+Remaining before v1 is **operator-only** (needs real `claude` + Whisper + the kid): **M1**
+(dogfood the Channel Loop → a paste-ready `publish.md`), **M1.5** (solo live-toolchain Pantsless
+dry-run before the kid), **M2** (the kid session — the heart of the channel). v1 acceptance: one
+episode reaches a paste-ready `publish.md`, and one real kid clip goes capture → brief → build → a
+verified, kid-usable toy end-to-end. Plan review: [docs/plan-review-fable.md](docs/plan-review-fable.md).

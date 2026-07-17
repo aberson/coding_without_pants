@@ -92,18 +92,24 @@ Key invariants: episode **id/folder immutable** (retitle changes `title` only); 
 
 ## Current state
 
-Steps 1–10 built: the full `cwp` surface ships — Channel Loop (`seed`/`idea`/`new`/`list`/`show`/
-`next`/`status`/`draft`/`publish`) and the Pantsless Build (`capture`/`brief`/`build`), the
-calibrated toy verifier, the 12-episode idea bank (`cwp seed`, plan §5.5), and the docs (this file,
-`README.md`, `docs/production-notes.md`; the three root SoT docs — `voice.md`/`build-contract.md`/
-`pantsless-test.md` — remain frozen from Step 1 and verified against the plan appendices). Remaining:
-**Step 11** (end-to-end smoke gate through both loops) and the operator-driven manual steps **M1**
-(dogfood the Channel Loop), **M1.5** (solo live-toolchain Pantsless dry-run), **M2** (the kid
-session — the heart of the channel). Built via `/build-phase` with default flags `--reviewers code
---isolation worktree`, Steps 8–9 escalated to `--reviewers deep` (verifier = measurement instrument,
-build engine = reliability core). v1 ships BOTH loops. v2 (later, `/plan-feature`) = a public
-playable-toy gallery + architecture writeup. Update this section at the end of each phase via
-`/repo-update`.
+**Automated build complete (Steps 1–11, 2026-07-17)** — issues #2–#12 closed, pushed to
+`origin/main`, 409 tests passing, 0 type errors, 0 lint violations. The full `cwp` surface ships:
+Channel Loop (`seed`/`idea`/`new`/`list`/`show`/`next`/`status`/`draft`/`publish`) and the
+Pantsless Build (`capture`/`brief`/`build`), the calibrated toy verifier (static `FORBIDDEN_PATTERNS`
++ Playwright headless checks + a `route`/`route_web_socket` network-block belt), the reliability-core
+build loop (generate → verify → repair → commit; `needs_human` on exhaustion, never clobbers), the
+12-episode idea bank (`cwp seed`, plan §5.5), and an end-to-end smoke gate over both loops. The three
+root SoT docs (`voice.md`/`build-contract.md`/`pantsless-test.md`) remain frozen from Step 1
+(verbatim-equality tests gate them). Built via `/build-phase` with `--reviewers code --isolation
+worktree`; Steps 8–9 escalated to `--reviewers deep` (verifier = measurement instrument, build engine
+= reliability core) and each passed the full six-lens gate. Follow-up backlog (not blocking v1): #16
+(Step-3 lifecycle polish), #17 (Step-7 fence-extraction vs TOML-multiline + redaction coverage).
+
+Remaining before v1 is **operator-only** (needs real `claude` + Whisper + the kid): one-time
+`cwp seed`, then **M1** (dogfood the Channel Loop → paste-ready `publish.md`, acceptance bar 1),
+**M1.5** (solo live-toolchain Pantsless dry-run before the kid), **M2** (the kid session, acceptance
+bar 2 + the Pantsless Test). After M1+M2 pass: `/repo-update`. v2 (later, `/plan-feature`) = a public
+playable-toy gallery + architecture writeup.
 
 ## Environment requirements
 
