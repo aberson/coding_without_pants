@@ -16,7 +16,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, capture, drafting, episodes, lifecycle, publishing
+from cwp import __version__, brief, capture, drafting, episodes, lifecycle, publishing
 from cwp.config import DEFAULT_WHISPER_MODEL, RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
@@ -27,7 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "brief": 7,
     "build": 9,
 }
 
@@ -263,6 +262,35 @@ def _cmd_capture(args: argparse.Namespace, episodes_dir: Path) -> int:
     return EXIT_OK
 
 
+def _cmd_brief(args: argparse.Namespace, episodes_dir: Path) -> int:
+    """Output contract mirrors capture (§4.3): the brief path goes to stdout; the
+    one-time unscanned warning and the re-ask notice go to stderr."""
+    # _episode_command hands only episodes_dir; re-derive Paths for private/ (the wrapper
+    # already proved the root walk succeeds, so this cannot raise here).
+    redact_path = get_paths().redact_names_txt
+    try:
+        result = brief.run_brief(episodes_dir, redact_path, args.id, dry_run=args.dry_run)
+    except drafting.DraftEnvError as exc:  # claude missing/unauthed/timeout/invalid-after-reask
+        print(f"cwp brief: {exc}", file=sys.stderr)
+        return EXIT_ENV_ERROR
+    if result.brief is None:  # --dry-run: the assembled distill prompt IS the output
+        print(result.prompt)
+        return EXIT_OK
+    if result.scan_state == "unscanned":  # absent redact file → one-time warning (§4.3)
+        print(f"cwp brief: warning: {capture.UNSCANNED_NOTICE}", file=sys.stderr)
+    if result.reasked:
+        print(
+            "cwp brief: warning: first reply failed validation — re-asked once",
+            file=sys.stderr,
+        )
+    assert result.path is not None  # success always writes brief.md
+    detail = f"{len(result.brief.must_haves)} must-haves"
+    if result.redacted_count:
+        detail += f", {result.redacted_count} name(s) redacted"
+    print(f"distilled -> {_display_path(result.path)} ({detail})")
+    return EXIT_OK
+
+
 def _cmd_publish(args: argparse.Namespace, episodes_dir: Path) -> int:
     """Stdout carries ONLY the paste block + checklist (+ ``--url`` record lines) so a
     redirect stays paste-clean; warnings and the wrote-file note go to stderr."""
@@ -368,6 +396,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("brief", help="distill the noisy transcript into brief.md")
     p.add_argument("id", help="episode id or seq")
+    p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print the fully-assembled distill prompt and exit — no claude call, no preflight",
+    )
 
     p = sub.add_parser("build", help="one-shot generate + verify + repair the episode toy")
     p.add_argument("id", help="episode id or seq")
@@ -390,6 +423,7 @@ def _handlers() -> dict[str, Handler]:
     handlers["next"] = _episode_command("next", _cmd_next)
     handlers["draft"] = _episode_command("draft", _cmd_draft)
     handlers["capture"] = _episode_command("capture", _cmd_capture)
+    handlers["brief"] = _episode_command("brief", _cmd_brief)
     handlers["publish"] = _episode_command("publish", _cmd_publish)
     handlers["version"] = _cmd_version
     return handlers

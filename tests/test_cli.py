@@ -32,9 +32,9 @@ ALL_COMMANDS = [
 # status/next became real handlers in Step 3 (tests/test_lifecycle.py);
 # draft became a real handler in Step 4 (tests/test_drafting.py);
 # publish became a real handler in Step 5 (tests/test_publishing.py);
-# capture became a real handler in Step 6 (tests/test_capture.py).
+# capture became a real handler in Step 6 (tests/test_capture.py);
+# brief became a real handler in Step 7 (tests/test_brief.py).
 STUB_ARGV: dict[str, list[str]] = {
-    "brief": ["brief", "001"],
     "build": ["build", "001"],
 }
 

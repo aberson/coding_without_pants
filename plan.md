@@ -631,6 +631,7 @@ session).
 - **Produces:** `src/cwp/brief.py`, `tests/test_brief.py`
 - **Done when:** with a fake `claude` shim, `cwp brief 005` reads the transcript and writes a `brief.md` whose frontmatter parses round-trip via brief.py's own loader, with non-empty vocabulary-form `must_haves[]` and `kid_quote`; a must_have outside the vocabulary triggers one re-ask, then exit 2; missing transcript → user error (exit 1); tests mock the `claude` boundary and assert the schema + redaction.
 - **Depends on:** 4, 6
+- **Status:** DONE (2026-07-16)
 
 ### Step 8: Toy verifier (calibrated)
 - **Problem:** `verify.py` — the static checks (the ONE `FORBIDDEN_PATTERNS` constant per §3.2:
