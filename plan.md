@@ -672,6 +672,7 @@ session).
 - **Produces:** `src/cwp/build.py`, `tests/test_build.py`
 - **Done when:** with a fake `claude` shim returning (a) a golden toy → `cwp build 005` commits `project/index.html` and logs a pass; (b) a broken toy twice then a good one → repair succeeds on the evidence; (c) broken every time → `needs_human=true`, exit 2, existing toy untouched; (d) the same broken toy twice in a row → near-identical abort before the last slot is spent; (e) a timeout → one same-slot retry then a timeout-specific `needs_human` message; missing brief exits 1; tests mock the `claude` boundary and exercise all paths.
 - **Depends on:** 1, 4, 7, 8
+- **Status:** DONE (2026-07-17)
 
 ### Step 10: Seed 12 ideas + docs
 - **Problem:** Seed the 12-episode idea bank as `idea` episodes; write `docs/production-notes.md`;

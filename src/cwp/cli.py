@@ -16,7 +16,17 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, brief, capture, drafting, episodes, lifecycle, publishing
+from cwp import (
+    __version__,
+    brief,
+    build,
+    capture,
+    drafting,
+    episodes,
+    lifecycle,
+    publishing,
+    verify,
+)
 from cwp.config import DEFAULT_WHISPER_MODEL, RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
@@ -26,9 +36,8 @@ EXIT_ENV_ERROR = 2
 Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
-_STUB_STEPS: dict[str, int] = {
-    "build": 9,
-}
+# Empty since Step 9 wired `build` (the last stub); the machinery stays for any future stub.
+_STUB_STEPS: dict[str, int] = {}
 
 
 class _Parser(argparse.ArgumentParser):
@@ -291,6 +300,35 @@ def _cmd_brief(args: argparse.Namespace, episodes_dir: Path) -> int:
     return EXIT_OK
 
 
+def _cmd_build(args: argparse.Namespace, episodes_dir: Path) -> int:
+    """§3.2 generate→verify→repair→commit. Environment failures (claude/chromium missing, a
+    missing build contract) and a ``needs_human`` give-up exit 2; a missing episode/brief and a
+    clobber refusal exit 1 (the latter via the ``EpisodeError`` the ``_episode_command`` wrapper
+    maps). On success the verified toy lands at ``project/index.html`` + a pass in ``log.jsonl``."""
+    # _episode_command hands only episodes_dir; re-derive Paths for build-contract.md (the
+    # wrapper already proved the root walk succeeds, so this cannot raise here).
+    build_contract_md = get_paths().build_contract_md
+    try:
+        result = build.run_build(episodes_dir, build_contract_md, args.id, force=args.force)
+    except (drafting.DraftEnvError, verify.HeadlessEnvError) as exc:
+        # claude missing/unauthed, build-contract.md missing, or chromium unavailable
+        print(f"cwp build: {exc}", file=sys.stderr)
+        return EXIT_ENV_ERROR
+    if result.outcome is build.BuildOutcome.COMMITTED:
+        print(f"built {_display_path(result.index_path)} ({result.attempts} shot(s))")
+        return EXIT_OK
+    # needs_human (§3.2 item 7): print the reason + last evidence + screenshot path, exit 2.
+    assert result.reason is not None  # NEEDS_HUMAN always carries a reason
+    print(f"cwp build: needs human — {result.reason.value}", file=sys.stderr)
+    if result.evidence:
+        print(result.evidence, file=sys.stderr)
+    if result.screenshot_path is not None:
+        shot = _display_path(result.screenshot_path)
+        print(f"cwp build: last screenshot -> {shot}", file=sys.stderr)
+    print(f"cwp build: marked needs_human=true in meta.toml ({args.id})", file=sys.stderr)
+    return EXIT_ENV_ERROR
+
+
 def _cmd_publish(args: argparse.Namespace, episodes_dir: Path) -> int:
     """Stdout carries ONLY the paste block + checklist (+ ``--url`` record lines) so a
     redirect stays paste-clean; warnings and the wrote-file note go to stderr."""
@@ -424,6 +462,7 @@ def _handlers() -> dict[str, Handler]:
     handlers["draft"] = _episode_command("draft", _cmd_draft)
     handlers["capture"] = _episode_command("capture", _cmd_capture)
     handlers["brief"] = _episode_command("brief", _cmd_brief)
+    handlers["build"] = _episode_command("build", _cmd_build)
     handlers["publish"] = _episode_command("publish", _cmd_publish)
     handlers["version"] = _cmd_version
     return handlers

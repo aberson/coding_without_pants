@@ -42,6 +42,12 @@ _(the first 15 seconds — why keep watching?)_
 # (Step 5) regenerates the file without it. A drift test asserts it stays in _PUBLISH_MD.
 PUBLISH_PLACEHOLDER_SENTINEL = "<!-- PLACEHOLDER"
 
+# The sentinel `cwp build` (Step 9) checks for clobber protection: present ONLY in the
+# scaffold index.html below, so a placeholder is safe to overwrite while a real (or
+# hand-edited) toy that dropped it is protected without `--force`. Mirrors the publish
+# sentinel; a drift test asserts it stays in the rendered placeholder.
+INDEX_HTML_PLACEHOLDER_SENTINEL = "<!-- cwp:placeholder-toy -->"
+
 _PUBLISH_MD = """\
 # {title} — publish metadata
 
@@ -85,6 +91,7 @@ def render_index_html_placeholder(*, title: str, episode_id: str) -> str:
     safe_id = html.escape(episode_id)
     return (
         "<!doctype html>\n"
+        f"{INDEX_HTML_PLACEHOLDER_SENTINEL}\n"
         '<html lang="en">\n'
         '<meta charset="utf-8">\n'
         f"<title>{safe_title}</title>\n"
