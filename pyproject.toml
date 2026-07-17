@@ -19,6 +19,7 @@ cwp = "cwp.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "pytest-timeout>=2.3",
     "ruff>=0.8",
     "mypy>=1.13",
 ]

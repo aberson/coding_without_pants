@@ -699,6 +699,7 @@ session).
 - **Produces:** `tests/test_smoke_e2e.py`
 - **Done when:** the round-trip is green for both loops with mocked external boundaries.
 - **Depends on:** 5, 9, 10
+- **Status:** DONE (2026-07-17)
 
 ### Manual Steps
 (These run after `/build-phase` completes. Operator drives.)
