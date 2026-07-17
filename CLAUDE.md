@@ -25,7 +25,7 @@ angle is a byproduct. Full spec: [plan.md](plan.md).
 | AI drafting + one-shot build | `claude` CLI (`claude -p`; OAuth, no API key in repo) |
 | Speech-to-text | faster-whisper (local; default `small`, `--model medium` escalation; privacy — voice stays on-device) |
 | Toy verification | playwright (headless Chromium) — same engine as `/judge-ui` |
-| Audio decode | PyAV (bundled with faster-whisper); system ffmpeg likely NOT needed — verified in Step 6 |
+| Audio decode | PyAV (bundled with faster-whisper); system ffmpeg NOT required — verified in Step 6 |
 | Test / lint / types | pytest, ruff, mypy |
 
 No backend, no database, no server, no ports. No PyTorch (faster-whisper uses CTranslate2).
@@ -36,7 +36,7 @@ No backend, no database, no server, no ports. No PyTorch (faster-whisper uses CT
 ```powershell
 uv sync                                   # install (Python 3.12+, tomli-w, faster-whisper, playwright)
 uv run playwright install chromium        # once, for the toy verifier
-# system ffmpeg likely NOT needed (faster-whisper decodes via bundled PyAV) — verified in Step 6
+# system ffmpeg NOT required — faster-whisper decodes via bundled PyAV (verified)
 
 # Channel Loop
 uv run cwp idea "<thought>"               # fast idea capture
@@ -102,8 +102,8 @@ end of each phase via `/repo-update`.
 ## Environment requirements
 
 - Windows 11 + PowerShell (workspace default). No ports, no Docker.
-- Python 3.12+ and `uv` on PATH; `playwright install chromium` once. System `ffmpeg` likely NOT
-  needed (faster-whisper decodes via bundled PyAV — verified in Step 6).
+- Python 3.12+ and `uv` on PATH; `playwright install chromium` once. System `ffmpeg` NOT
+  required — faster-whisper decodes via bundled PyAV (verified in Step 6).
 - The `claude` CLI installed and authenticated (OAuth) — required for `cwp draft`/`brief`/`build`;
   the rest of the Channel Loop works without it. Those commands preflight auth and fail fast with
   fix-it text if unavailable.

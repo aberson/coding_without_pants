@@ -57,6 +57,16 @@ class Paths:
     def pantsless_test_md(self) -> Path:
         return self.root / "pantsless-test.md"
 
+    @property
+    def private_dir(self) -> Path:
+        """Git-ignored operator-private dir (§4.3) — never committed, never required."""
+        return self.root / "private"
+
+    @property
+    def redact_names_txt(self) -> Path:
+        """The ``real-name = nickname`` map capture.py/brief.py consult before any write."""
+        return self.private_dir / "redact-names.txt"
+
 
 def get_paths(start: Path | None = None) -> Paths:
     """Resolve the canonical :class:`Paths` for the repo containing *start*."""

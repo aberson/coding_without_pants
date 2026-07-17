@@ -74,14 +74,15 @@ Not "cwp is feature-complete." (See Steps M1 + M2.)
 | AI drafting + build | `claude` CLI (subprocess, `claude -p`) | Subscription OAuth already on the machine; the one-shot generation primitive |
 | Speech-to-text | `faster-whisper` (local; default `small`, `--model medium` to escalate) | On-device → a child's voice never leaves the machine; low Windows setup |
 | Toy verification | `playwright` (headless Chromium) | Console-error + keypoint checks on generated toys; same engine as `/judge-ui` |
-| Audio decode | PyAV (bundled with `faster-whisper`) | Decodes non-WAV input; system `ffmpeg` likely NOT needed — verify in Step 6 |
+| Audio decode | PyAV (bundled with `faster-whisper`) | Decodes non-WAV input; system `ffmpeg` NOT required — faster-whisper decodes via bundled PyAV (verified in Step 6) |
 | Test / lint / types | `pytest`, `ruff`, `mypy` | Workspace convention |
 
 No backend, no database, no server, no ports. Runtime deps beyond stdlib: `tomli-w`,
 `faster-whisper`, `playwright` (**runtime, not dev** — `verify.py` imports it inside `cwp build`);
-dev group: `pytest`, `ruff`, `mypy`. System: `playwright install chromium` once. `ffmpeg` on PATH
-is likely NOT required (faster-whisper decodes via bundled PyAV) — verify in Step 6 and drop the
-prereq if confirmed. Notably **no PyTorch** (faster-whisper uses CTranslate2).
+dev group: `pytest`, `ruff`, `mypy`. System: `playwright install chromium` once. System `ffmpeg`
+is NOT required — faster-whisper decodes via bundled PyAV (verified in Step 6: an MP3 decoded
+through `faster_whisper.audio.decode_audio` with ffmpeg stripped from PATH). Notably **no
+PyTorch** (faster-whisper uses CTranslate2).
 
 ---
 
@@ -439,7 +440,7 @@ coding_without_pants/
 # From the repo root (c:\Users\abero\dev\coding_without_pants)
 uv sync                                  # venv + install (Python 3.12+, tomli-w, faster-whisper, playwright)
 uv run playwright install chromium       # once, for the toy verifier
-# system ffmpeg likely NOT needed (faster-whisper decodes via bundled PyAV) — verified in Step 6
+# system ffmpeg NOT required — faster-whisper decodes via bundled PyAV (verified)
 ```
 
 Channel Loop:
@@ -613,6 +614,7 @@ session).
 - **Produces:** `src/cwp/capture.py`, `tests/test_capture.py`
 - **Done when:** `cwp capture 005 --audio tests/fixtures/hello.wav` writes a redaction-scanned transcript; the whisper call is behind a seam so tests **mock the transcription boundary** (a canned transcript); one real-model test is opt-in via `CWP_RUN_REAL_WHISPER=1` (deselected by default — faster-whisper is a required dep, so `importorskip` would never skip); the low-confidence heuristic prints the re-record hint in a test; a name in the redact list never appears in the written transcript.
 - **Depends on:** 2
+- **Status:** DONE (2026-07-16)
 
 ### Step 7: Brief (kid-gateway distill)
 - **Problem:** `brief.py` — assemble a distill prompt from the noisy transcript (treat it as
@@ -732,7 +734,7 @@ session).
 - **What to look for:**
   | Check | Expected outcome |
   |---|---|
-  | First-run plumbing | whisper model download completes; chromium present; `claude` auth preflight passes; (note whether ffmpeg was actually needed) |
+  | First-run plumbing | whisper model download completes; chromium present; `claude` auth preflight passes (system ffmpeg confirmed NOT needed in Step 6 — no check required) |
   | Generate → verify | real `claude -p` output survives extraction + static + headless checks (or repair recovers on the evidence) |
   | Repair loop | on any failure, the evidence-fed retry visibly addresses the evidence |
   | Timing | capture + brief + build fits a nap window — note the wall-clock |

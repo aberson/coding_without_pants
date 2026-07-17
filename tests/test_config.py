@@ -72,6 +72,8 @@ def test_paths_properties(tmp_path: Path) -> None:
     assert paths.voice_md == tmp_path / "voice.md"
     assert paths.build_contract_md == tmp_path / "build-contract.md"
     assert paths.pantsless_test_md == tmp_path / "pantsless-test.md"
+    assert paths.private_dir == tmp_path / "private"
+    assert paths.redact_names_txt == tmp_path / "private" / "redact-names.txt"
 
 
 def test_get_paths_resolves_this_repo() -> None:

@@ -14,6 +14,9 @@ clips/
 *.3gp
 episodes/*/capture/
 episodes/*/project/.repair/
+# The ONE audio file that IS committed: a generated 1s test beep, no child speech
+# (Step 6 fixture; the *.wav glob above would otherwise swallow it).
+!tests/fixtures/hello.wav
 
 # Python / tooling
 .venv

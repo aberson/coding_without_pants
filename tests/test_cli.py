@@ -31,9 +31,9 @@ ALL_COMMANDS = [
 # new/idea/list/show became real handlers in Step 2 (tests/test_episodes.py);
 # status/next became real handlers in Step 3 (tests/test_lifecycle.py);
 # draft became a real handler in Step 4 (tests/test_drafting.py);
-# publish became a real handler in Step 5 (tests/test_publishing.py).
+# publish became a real handler in Step 5 (tests/test_publishing.py);
+# capture became a real handler in Step 6 (tests/test_capture.py).
 STUB_ARGV: dict[str, list[str]] = {
-    "capture": ["capture", "001", "--audio", "clip.wav"],
     "brief": ["brief", "001"],
     "build": ["build", "001"],
 }
@@ -85,7 +85,7 @@ def test_no_heavy_imports_at_module_top() -> None:
     code = (
         "import sys\n"
         "import cwp.cli\n"
-        "heavy = [m for m in ('faster_whisper', 'playwright', 'ctranslate2')"
+        "heavy = [m for m in ('faster_whisper', 'playwright', 'ctranslate2', 'av')"
         " if m in sys.modules]\n"
         "assert not heavy, f'heavy modules imported at CLI import time: {heavy}'\n"
     )

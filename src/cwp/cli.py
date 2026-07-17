@@ -16,8 +16,8 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import NoReturn
 
-from cwp import __version__, drafting, episodes, lifecycle, publishing
-from cwp.config import RepoRootNotFoundError, get_paths
+from cwp import __version__, capture, drafting, episodes, lifecycle, publishing
+from cwp.config import DEFAULT_WHISPER_MODEL, RepoRootNotFoundError, get_paths
 
 EXIT_OK = 0
 EXIT_USER_ERROR = 1
@@ -27,7 +27,6 @@ Handler = Callable[[argparse.Namespace], int]
 
 # Subcommands not yet implemented → the plan.md §14 step that implements each.
 _STUB_STEPS: dict[str, int] = {
-    "capture": 6,
     "brief": 7,
     "build": 9,
 }
@@ -230,6 +229,40 @@ def _cmd_draft(args: argparse.Namespace, episodes_dir: Path) -> int:
     return EXIT_OK
 
 
+def _cmd_capture(args: argparse.Namespace, episodes_dir: Path) -> int:
+    """§4.3 output contract: the transcript path goes to stdout; the one-time unscanned
+    warning and the low-confidence re-record hint go to stderr (exit stays 0 for both)."""
+    # _episode_command hands only episodes_dir; re-derive Paths for private/ (the wrapper
+    # already proved the root walk succeeds, so this cannot raise here).
+    redact_path = get_paths().redact_names_txt
+    try:
+        result = capture.run_capture(
+            episodes_dir,
+            redact_path,
+            args.id,
+            Path(args.audio),
+            model_size=args.model,
+            allow_names=args.allow_names,
+        )
+    except capture.CaptureEnvError as exc:  # whisper import / model / decode failure
+        print(f"cwp capture: {exc}", file=sys.stderr)
+        return EXIT_ENV_ERROR
+    if result.scan_state == "unscanned":  # absent redact file → one-time warning (§4.3)
+        print(f"cwp capture: warning: {capture.UNSCANNED_NOTICE}", file=sys.stderr)
+    if result.low_confidence_reason is not None:
+        print(
+            f"cwp capture: {capture.RERECORD_HINT} ({result.low_confidence_reason})",
+            file=sys.stderr,
+        )
+    detail = f"{result.word_count} words"
+    if result.redacted_count:
+        detail += f", {result.redacted_count} name(s) redacted"
+    elif result.scan_state == "skipped":
+        detail += ", redaction skipped (--allow-names)"
+    print(f"transcribed -> {_display_path(result.transcript_path)} ({detail})")
+    return EXIT_OK
+
+
 def _cmd_publish(args: argparse.Namespace, episodes_dir: Path) -> int:
     """Stdout carries ONLY the paste block + checklist (+ ``--url`` record lines) so a
     redirect stays paste-clean; warnings and the wrote-file note go to stderr."""
@@ -320,7 +353,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("capture", help="transcribe a kid clip via local faster-whisper")
     p.add_argument("id", help="episode id or seq")
-    p.add_argument("--audio", help="path to the recorded clip")
+    p.add_argument("--audio", required=True, help="path to the recorded clip (--record is v3)")
+    p.add_argument(
+        "--model",
+        choices=capture.WHISPER_MODELS,
+        default=DEFAULT_WHISPER_MODEL,
+        help=f"whisper model size (default: {DEFAULT_WHISPER_MODEL}; medium = escalation)",
+    )
+    p.add_argument(
+        "--allow-names",
+        action="store_true",
+        help="skip the private/redact-names.txt scan (names stay verbatim)",
+    )
 
     p = sub.add_parser("brief", help="distill the noisy transcript into brief.md")
     p.add_argument("id", help="episode id or seq")
@@ -345,6 +389,7 @@ def _handlers() -> dict[str, Handler]:
     handlers["status"] = _episode_command("status", _cmd_status)
     handlers["next"] = _episode_command("next", _cmd_next)
     handlers["draft"] = _episode_command("draft", _cmd_draft)
+    handlers["capture"] = _episode_command("capture", _cmd_capture)
     handlers["publish"] = _episode_command("publish", _cmd_publish)
     handlers["version"] = _cmd_version
     return handlers
