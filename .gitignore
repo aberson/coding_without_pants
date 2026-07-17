@@ -31,3 +31,4 @@ dist/
 .plan-expedite-state*
 .ui-review-evidence/
 .build-step/
+.review-deep/

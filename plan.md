@@ -654,6 +654,7 @@ session).
 - **Produces:** `src/cwp/verify.py`, `tests/fixtures/{golden,garbage_button,garbage_audio,garbage_dialog}.html`, `tests/test_verify.py`
 - **Done when:** `verify(golden.html)` passes; each single-defect garbage fixture fails FOR ITS OWN defect (asserted on the structured evidence, not just pass/fail); the must_haves compiler correctly maps ≥3 vocabulary predicates **not present in any fixture** to assertions; the verifier returns structured evidence (which check failed, with the offending line/selector/console error); requires `playwright install chromium`.
 - **Depends on:** 1, 7
+- **Status:** DONE (2026-07-16)
 
 ### Step 9: Build engine (generate → verify → repair → commit)
 - **Problem:** `build.py` — the §3.2 loop via the drafting.py claude seam (prompt =

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eager Audio Toy (calibration garbage)</title>
+<style>
+  /* Calibration SINGLE-DEFECT fixture: an AudioContext is constructed at TOP LEVEL on load
+     (the classic autoplay-policy bug — it sits silently suspended and emits NO console
+     error, so only the injected AudioContext shim can see it). Everything else is
+     contract-clean; the handler resume()s the context inside the click gesture, so the
+     post-click running check passes. verify_toy must fail this toy FOR THE
+     no-audio-before-click CHECK and nothing else (tests/test_verify.py). */
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at top, #bfe9ff, #7fd07f);
+    overflow: hidden;
+  }
+  button[data-testid="main-action"] {
+    width: 70vw; height: 70vh;
+    border: none; border-radius: 10vmin;
+    background: linear-gradient(#ffd447, #ff9447);
+    font-size: 12rem;
+    cursor: pointer;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 2vmin 6vmin rgba(0, 0, 0, 0.35);
+  }
+  button[data-testid="main-action"]:active { transform: scale(0.95); }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  .sun { position: fixed; top: 2vh; right: 2vw; width: 14vmin; height: 14vmin; }
+</style>
+</head>
+<body>
+  <svg class="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="34" fill="#ffe066"/>
+    <circle cx="38" cy="44" r="5" fill="#7a5c00"/>
+    <circle cx="62" cy="44" r="5" fill="#7a5c00"/>
+    <path d="M 34 62 Q 50 76 66 62" stroke="#7a5c00" stroke-width="5" fill="none"
+          stroke-linecap="round"/>
+  </svg>
+  <button data-testid="main-action" data-action-count="0" data-mood="calm"
+          aria-label="make the dinosaur roar">&#129430;</button>
+  <script>
+    var button = document.querySelector('[data-testid="main-action"]');
+    // THE DEFECT: top-level construction, before any user gesture. No console error fires —
+    // the context just starts life suspended. Only the verifier's shim log catches this.
+    var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    button.addEventListener("click", function () {
+      var count = parseInt(button.getAttribute("data-action-count"), 10) + 1;
+      button.setAttribute("data-action-count", String(count));
+      button.setAttribute("data-mood", count % 2 === 0 ? "calm" : "roar");
+      try {
+        audioContext.resume();
+        var osc = audioContext.createOscillator();
+        var gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.frequency.value = 220 + (count % 5) * 110;
+        gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioContext.currentTime + 0.3);
+      } catch (error) {
+        /* no sound is fine; a broken toy is not */
+      }
+    });
+  </script>
+</body>
+</html>

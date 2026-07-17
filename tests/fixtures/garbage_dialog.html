@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alert Toy (calibration garbage)</title>
+<style>
+  /* Calibration SINGLE-DEFECT fixture: an alert() call is wired into the main action —
+     a blocking dialog that would freeze the page (and hang a headless click). verify_toy
+     must fail this toy FOR THE STATIC dialog-alert CHECK, with the offending line as
+     evidence, and must NEVER reach the browser phase (tests/test_verify.py). */
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at top, #bfe9ff, #7fd07f);
+    overflow: hidden;
+  }
+  button[data-testid="main-action"] {
+    width: 70vw; height: 70vh;
+    border: none; border-radius: 10vmin;
+    background: linear-gradient(#ffd447, #ff9447);
+    font-size: 12rem;
+    cursor: pointer;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 2vmin 6vmin rgba(0, 0, 0, 0.35);
+  }
+  button[data-testid="main-action"]:active { transform: scale(0.95); }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
+  .sun { position: fixed; top: 2vh; right: 2vw; width: 14vmin; height: 14vmin; }
+</style>
+</head>
+<body>
+  <svg class="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="34" fill="#ffe066"/>
+    <circle cx="38" cy="44" r="5" fill="#7a5c00"/>
+    <circle cx="62" cy="44" r="5" fill="#7a5c00"/>
+    <path d="M 34 62 Q 50 76 66 62" stroke="#7a5c00" stroke-width="5" fill="none"
+          stroke-linecap="round"/>
+  </svg>
+  <button data-testid="main-action" data-action-count="0" data-mood="calm"
+          aria-label="make the dinosaur roar">&#129430;</button>
+  <script>
+    var button = document.querySelector('[data-testid="main-action"]');
+    button.addEventListener("click", function () {
+      alert("ROAR!"); // THE DEFECT: a blocking dialog on the one action
+      var count = parseInt(button.getAttribute("data-action-count"), 10) + 1;
+      button.setAttribute("data-action-count", String(count));
+      button.setAttribute("data-mood", count % 2 === 0 ? "calm" : "roar");
+    });
+  </script>
+</body>
+</html>
